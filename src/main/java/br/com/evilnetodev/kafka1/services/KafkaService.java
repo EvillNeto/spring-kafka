@@ -1,4 +1,4 @@
-package br.com.services;
+package br.com.evilnetodev.kafka1.services;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -14,17 +14,14 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.stereotype.Service;
 
+@Service
 public class KafkaService {
 
-    private Properties sendProperties;
+    private Properties sendProperties = buildSendProperties();
 
-    private Properties readProperties;
-
-    public KafkaService() {
-        this.sendProperties = buildSendProperties();
-        this.readProperties = buildReadProperties();
-    }
+    private Properties readProperties = buildReadProperties();
 
     /* 
     Implementação do metodo de envio de mensagens
