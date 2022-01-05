@@ -17,11 +17,17 @@ public class MessageController {
 
     private KafkaService kafkaService = new KafkaService();
 
+    /* 
+    Devolve todas as mensagens não lidas ja enviadas
+     */
     @GetMapping
     public List<String> readMenssagens(){
         return kafkaService.read();
     }
 
+    /* 
+    Envia uma mensagem para o kafka
+    */
     @PostMapping("/{message}")
     public String sendMenssage(@PathVariable(name = "message") String message) throws InterruptedException, ExecutionException{
         return kafkaService.send(message);

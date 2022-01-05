@@ -26,6 +26,9 @@ public class KafkaService {
         this.readProperties = buildReadProperties();
     }
 
+    /* 
+    Implementação do metodo de envio de mensagens
+    */
     public String send(String message) throws InterruptedException, ExecutionException {
 
         var producer = new KafkaProducer<String, String>(getSendProperties());
@@ -42,6 +45,9 @@ public class KafkaService {
         return "success";
     }
 
+    /* 
+    Implementação do metodo de leitura das mensagens
+    */
     public List<String> read() {
         var consumer = new KafkaConsumer<String, String>(getReadProperties());
         consumer.subscribe(Collections.singletonList("TESTE_MENSAGEM_1"));
@@ -75,6 +81,10 @@ public class KafkaService {
         this.readProperties = readProperties;
     }
 
+
+    /* 
+    Cria as configurações de envio
+    */
     private Properties buildReadProperties() {
         var properties = new Properties();
         properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
@@ -86,6 +96,9 @@ public class KafkaService {
         return properties;
     }
 
+    /* 
+    Cria as configurações de leitura
+    */
     private static Properties buildSendProperties() {
         var properties = new Properties();
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
