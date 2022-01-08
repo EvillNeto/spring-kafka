@@ -21,19 +21,15 @@ public class MessageController {
     @Autowired
     private KafkaService kafkaService;
 
-    /*
-     * Devolve todas as mensagens não lidas ja enviadas
-     */
+    /* Devolve todas as mensagens não lidas ja enviadas */
     @GetMapping("/{topic}/{group}")
     public List<String> readMenssagens(@PathVariable(name = "topic") String topic,
             @PathVariable(name = "group") String group) {
         return kafkaService.read(topic, group);
     }
 
-    /*
-     * Envia uma mensagem para o kafka
-     */
-    @PostMapping("/{topic}")
+    /* Envia uma mensagem para o kafka */
+    @PostMapping()
     public String sendMessage(@RequestBody MessageForm form)
             throws InterruptedException, ExecutionException {
         return kafkaService.send(form.getMessage(), form.getTopic());
