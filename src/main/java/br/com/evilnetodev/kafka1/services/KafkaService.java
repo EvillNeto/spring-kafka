@@ -5,56 +5,63 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class KafkaService {
 
-    private Properties sendProperties = buildSendProperties();
+    private static final Logger LOG= LoggerFactory.getLogger(KafkaService.class);
 
-    private Properties readProperties = buildReadProperties();
+    private String clientId = UUID.randomUUID().toString();
 
-    /* 
-    Implementação do metodo de envio de mensagens
-    */
-    public String send(String message) throws InterruptedException, ExecutionException {
+    @Value("${KAFKA_ADRESS}")
+    private static String kafkaAdress;
 
-        var producer = new KafkaProducer<String, String>(getSendProperties());
-        var record = new ProducerRecord<>("TESTE_MENSAGEM_1", message, message);
-        producer.send(record, (data, ex) -> {
-            if (ex != null) {
-                ex.printStackTrace();
-                return;
-            }
-            System.out.println("sucesso enviando" + data.topic() + ":::partition" + data.partition() + "/ offset"
-                    + data.offset() + "/ timestamp" + data.timestamp());
-        }).get();
+    private Callback callback = (data, ex) -> {
+        if (ex != null) {
+            ex.printStackTrace();
+            return;
+        }
+        LOG.info("sucesso enviando" + data.topic() + ":::partition" + data.partition() + "/ offset"
+                + data.offset() + "/ timestamp" + data.timestamp());
+    };
+
+    /* Implementação do metodo de envio de mensagen */
+    public String send(String message, String topic) throws InterruptedException, ExecutionException {
+
+        var producer = new KafkaProducer<String, String>(sendProperties());
+        var record = new ProducerRecord<>(topic, message, message);
+        producer.send(record, callback).get();
         producer.close();
         return "success";
     }
 
-    /* 
-    Implementação do metodo de leitura das mensagens
-    */
-    public List<String> read() {
-        var consumer = new KafkaConsumer<String, String>(getReadProperties());
-        consumer.subscribe(Collections.singletonList("TESTE_MENSAGEM_1"));
+    /* Implementação do metodo de leitura das mensagens não lidas*/
+    public List<String> read(String topic, String group) {
+
+        var consumer = new KafkaConsumer<String, String>(readProperties(group));
+        consumer.subscribe(Collections.singletonList(topic));
         var records = consumer.poll(Duration.ofMillis(100));
         List<String> messages = new ArrayList<>();
         if (!records.isEmpty()) {
             int count = 0;
-            System.out.println("########### " + records.count() + " mensagem encontrada ##############");
+            LOG.info("########### " + records.count() + " mensagem encontrada ##############");
             for (var record : records) {
-                System.out.println("____________Processando mensagem " + count + "_____________");
+                LOG.info("____________Processando mensagem " + count + "_____________");
                 messages.add(record.value());
             }
         }
@@ -62,43 +69,24 @@ public class KafkaService {
         return messages;
     }
 
-    public Properties getSendProperties() {
-        return sendProperties;
-    }
+    /* Cria as configurações de envio */
+    private Properties readProperties(String group) {
 
-    public void setSendProperties(Properties sendProperties) {
-        this.sendProperties = sendProperties;
-    }
-
-    public Properties getReadProperties() {
-        return readProperties;
-    }
-
-    public void setReadProperties(Properties readProperties) {
-        this.readProperties = readProperties;
-    }
-
-
-    /* 
-    Cria as configurações de envio
-    */
-    private Properties buildReadProperties() {
         var properties = new Properties();
-        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaAdress);
         properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, "0");
-        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, "0");
+        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, group);
+        properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, clientId);
 
         return properties;
     }
 
-    /* 
-    Cria as configurações de leitura
-    */
-    private static Properties buildSendProperties() {
+    /* Cria as configurações de leitura */
+    private static Properties sendProperties() {
+
         var properties = new Properties();
-        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaAdress);
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
 
